@@ -1,0 +1,63 @@
+name: Build and Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'    # Trigger only on version tags (e.g., v1.0.0)
+
+jobs:
+  build:
+    name: Build and Release Binaries
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        goos: [windows, darwin, linux]
+        goarch: [amd64]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22.3'
+
+      - name: Build Binary
+        run: |
+          mkdir -p dist
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/ghstat-${{ matrix.goos }}-${{ matrix.goarch }}
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ghstat-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/ghstat-${{ matrix.goos }}-${{ matrix.goarch }}
+
+  release:
+    name: Create Release and Upload Binaries
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ghstat-${{ matrix.goos }}-${{ matrix.goarch }}
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            Release version ${{ github.event.ref }}.
+          files: |
+            dist/ghstat-linux-amd64
+            dist/ghstat-darwin-amd64
+            dist/ghstat-windows-amd64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
