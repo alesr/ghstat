@@ -22,6 +22,6 @@ func main() {
 	var formatter tableFormatter
 
 	if err := fetcher.fetchAndFormat(username, &formatter); err != nil {
-		log.Fatalf("Error fetching and formatting: %w", err)
+		log.Fatalf("Error fetching and formatting: %s", err)
 	}
 }
